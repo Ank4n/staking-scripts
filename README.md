@@ -7,7 +7,7 @@
 - Dry run: `yarn run migrate:currency-fungible -e "wss://paseo-rpc.n.dwellir.com" -d true`
 
 ## Fungible Migration (Paseo)
-- Setup a wallet with env variable `DOT_BOT_MNEMONIC`.
+- Put the seed phrase for the wallet you wanna use under the env variable `DOT_BOT_MNEMONIC`.
 - Transfer 5000 Paseo to this account (without any derivation path).
 - Run the migration script: `yarn run migrate:currency-fungible -e "wss://paseo-rpc.n.dwellir.com" --dry false`
 
