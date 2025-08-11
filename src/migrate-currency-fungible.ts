@@ -20,7 +20,7 @@ const ACCOUNTS_TO_USE = 24;
 // DOT ED = 10,000,000,000
 // Westend ED = 10,000,000,000
 // PASEO ED = 10,000,000,000
-const TOPUP_BALANCE = 20_000_000_000; // 2 Paseo
+const TOPUP_BALANCE = 2_000_000_000_000; // 200 Paseo
 
 const optionsPromise = yargs(hideBin(process.argv))
 	.option('endpoint', {
