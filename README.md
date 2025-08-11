@@ -1,35 +1,17 @@
-# Pool script to help with migration of nomination pool members to Delegation based staking
-
-More details on the migration can be
-found [here](https://support.polkadot.network/support/solutions/articles/65000188140-changes-for-nomination-pool-members-and-opengov-participation).
+# Fungible migration on Paseo
 
 ## Pre-requisites
 
 - Install yarn: `npm install --global yarn`
 - Install dependencies: `yarn install`
-- Dry run: `yarn run main -e "wss://polkadot-rpc.dwellir.com" -d true`
+- Dry run: `yarn run migrate:currency-fungible -e "wss://paseo-rpc.n.dwellir.com" -d true`
 
-## Migration
-- Setup a wallet with env variable `DOT_BOT_MNEMONIC` and funds to pay for the migration fees.
-- Keep BATCH_SIZE to 1 for the transactions to be free.
-- Transfer 12+ DOTs to admin account.
-- Run the migration script: `yarn run main -e "wss://polkadot-rpc.dwellir.com" -d false -s 0"`
-
-## Recommended Params
-
-Westend: 12169 members, set `BATCH_SIZE` to 1 to monitor errors. Took 3.5 hours to migrate all members.
-
-Kusama has around ~3400 members. ~1 hour to migrate all members.
-
-Polkadot has around ~40000 members. Would take around 11 hours with 12 account bots. Parallelize to make it faster.
-
-## To collect
-`yarn run collect -e "wss://kusama-rpc.dwellir.com"`
+## Fungible Migration (Paseo)
+- Setup a wallet with env variable `DOT_BOT_MNEMONIC`.
+- Transfer 5000 Paseo to this account (without any derivation path).
+- Run the migration script: `yarn run migrate:currency-fungible -e "wss://paseo-rpc.n.dwellir.com" --dry false`
 
 
-## Kusama RPCs
-- wss://kusama-rpc.publicnode.com
-- wss://kusama-rpc.n.dwellir.com
-- wss://kusama-rpc-tn.dwellir.com
-- wss://ksm-rpc.stakeworld.io
-- wss://rpc-kusama.helixstreet.io
+## To collect the funds back
+- Migration would split funds in multiple accounts derived from the main account. To collect all funds back to the main account use:
+`yarn run collect -e "wss://paseo-rpc.n.dwellir.com"`
