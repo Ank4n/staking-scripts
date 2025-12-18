@@ -15,3 +15,13 @@
 ## To collect the funds back
 - Migration would split funds in multiple accounts derived from the main account. To collect all funds back to the main account use:
 `yarn run collect -e "wss://paseo-rpc.n.dwellir.com"`
+
+## Investigate VoterList
+Find nominators/validators missing from VoterList (for debugging `wrong external count` try-state errors):
+```bash
+# Latest state
+yarn run investigate:voterlist -e "wss://polkadot-asset-hub-rpc.polkadot.io"
+
+# At specific block
+yarn run investigate:voterlist -e "wss://polkadot-asset-hub-rpc.polkadot.io" -b 10846883
+```
