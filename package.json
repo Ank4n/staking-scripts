@@ -8,6 +8,7 @@
 		"migrate:currency-fungible": "./node_modules/.bin/ts-node ./src/migrate-currency-fungible.ts",
 		"migrate:virtual-stakers": "./node_modules/.bin/ts-node ./src/migrate-virtual-stakers.ts",
 		"health:provider-consumer": "./node_modules/.bin/ts-node ./src/provider-consumer.ts",
+		"investigate:voterlist": "./node_modules/.bin/ts-node ./src/investigate-voterlist.ts",
 		"main:dev": "./node_modules/.bin/nodemon --exec ./node_modules/.bin/ts-node ./src/index.ts",
 		"collect": "./node_modules/.bin/ts-node src/collect-signers.ts",
 		"build": "npm run clean && ./node_modules/.bin/tsc --pretty --declaration",
