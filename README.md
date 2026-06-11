@@ -16,6 +16,16 @@
 - Migration would split funds in multiple accounts derived from the main account. To collect all funds back to the main account use:
 `yarn run collect -e "wss://paseo-rpc.n.dwellir.com"`
 
+## Nominator Exposure Report
+Check which validators a nominator was exposed to across recent eras (via `ErasStakersPaged`):
+```bash
+# Check last 84 eras (default)
+yarn run nominator:exposure -e "wss://polkadot-asset-hub-rpc.polkadot.io" -a "<nominator_ss58>"
+
+# Check last N eras
+yarn run nominator:exposure -e "wss://polkadot-asset-hub-rpc.polkadot.io" -a "<>" --eras 4
+```
+
 ## Investigate VoterList
 Find nominators/validators missing from VoterList (for debugging `wrong external count` try-state errors):
 ```bash
