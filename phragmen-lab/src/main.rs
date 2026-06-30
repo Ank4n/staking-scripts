@@ -1,7 +1,8 @@
 //! Local phragmén playground.
 //!
-//! Reads a snapshot dumped by `yarn run dump:snapshot` and runs the *exact*
-//! `sp-npos-elections` sequential-phragmén + balancing the runtime uses, then
+//! Reads a snapshot dumped by `yarn run dump:snapshot` and runs the same
+//! `sp-npos-elections` sequential-phragmén + balancing + scoring the runtime uses
+//! (minus the chain's post-solve trimming — see README "Fidelity / caveats"), then
 //! prints the resulting `ElectionScore` and compares it against `minimumScore`.
 //!
 //! Tweak the knobs without touching the chain:
@@ -17,9 +18,10 @@ use clap::Parser;
 use serde::Deserialize;
 use sp_arithmetic::per_things::Perbill;
 use sp_npos_elections::{
-	evaluate_support, seq_phragmen, to_supports, BalancingConfig, ElectionScore, StakedAssignment,
-	VoteWeight,
+	assignment_ratio_to_staked_normalized, evaluate_support, seq_phragmen, to_supports,
+	BalancingConfig, ElectionScore, VoteWeight,
 };
+use std::collections::HashMap;
 
 // AccountId for the solver: just the candidate's index in the snapshot. Cheap and
 // IdentifierT-compatible. We carry the SS58 strings separately for reporting.
@@ -109,7 +111,12 @@ fn main() {
 		.voters
 		.iter()
 		.map(|(idx, stake, targets)| {
-			let w: VoteWeight = stake.parse::<u128>().expect("voter stake") as VoteWeight;
+			// Match the chain's `CurrencyToVote::to_vote`, which on Polkadot/Westend is
+			// `SaturatingCurrencyToVote` (no scaling, just `unique_saturated_into::<u64>()`).
+			// A plain `as VoteWeight` would WRAP mod 2^64 for whales > u64::MAX planck; the
+			// chain clamps. Saturate to stay faithful.
+			let planck = stake.parse::<u128>().expect("voter stake");
+			let w: VoteWeight = planck.min(VoteWeight::MAX as u128) as VoteWeight;
 			(*idx, w, targets.clone())
 		})
 		.collect();
@@ -144,6 +151,11 @@ fn main() {
 
 	let cfg = BalancingConfig { iterations: args.iterations, tolerance: args.tolerance };
 
+	// O(1) stake lookup, built once. The chain uses `generate_voter_cache`; a linear
+	// `.find()` per assignment would be O(voters²) and re-run on every `--sweep` step.
+	let stake_map: HashMap<Cand, VoteWeight> =
+		voters.iter().map(|(v, w, _)| (*v, *w)).collect();
+
 	let run = |to_elect: usize| -> ElectionScore {
 		let res = seq_phragmen::<Cand, Perbill>(
 			to_elect,
@@ -153,23 +165,14 @@ fn main() {
 		)
 		.expect("seq_phragmen");
 
-		// stake lookup for converting ratio-assignments to staked-assignments
-		let stake_of = |idx: &Cand| -> VoteWeight {
-			voters
-				.iter()
-				.find(|(v, _, _)| v == idx)
-				.map(|(_, w, _)| *w)
-				.unwrap_or(0)
-		};
+		let stake_of = |idx: &Cand| -> VoteWeight { stake_map.get(idx).copied().unwrap_or(0) };
 
-		let staked: Vec<StakedAssignment<Cand>> = res
-			.assignments
-			.into_iter()
-			.map(|a| {
-				let budget = stake_of(&a.who) as u128;
-				a.into_staked(budget)
-			})
-			.collect();
+		// Match the chain's `assignment_ratio_to_staked_normalized` (miner.rs): convert
+		// ratio→staked AND re-normalize each voter's distribution to sum exactly to their
+		// budget. The bare `into_staked` the chain does NOT use leaves Perbill rounding dust
+		// on each edge, which perturbs all three score components.
+		let staked = assignment_ratio_to_staked_normalized(res.assignments, &stake_of)
+			.expect("normalize staked assignments");
 
 		let supports = to_supports(&staked);
 		evaluate_support(supports.iter().map(|(_, s)| s))

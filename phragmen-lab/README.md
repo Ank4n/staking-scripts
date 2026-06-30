@@ -1,10 +1,11 @@
 # phragmen-lab
 
 A local, offline playground for the Polkadot **multi-block election** (EPMB). It replays
-an election round from a dumped snapshot and runs the **exact** sequential-phragmén +
-balancing the runtime uses, so you can ask _what-if_ questions — "would electing fewer
-validators make this solution pass?", "what if `minimumScore` were lower?" — in seconds,
-without touching a node.
+an election round from a dumped snapshot and runs the same sequential-phragmén +
+balancing + scoring the runtime uses (minus the chain's post-solve _trimming_ — see
+[Fidelity / caveats](#fidelity--caveats)), so you can ask _what-if_ questions — "would
+electing fewer validators make this solution pass?", "what if `minimumScore` were
+lower?" — in seconds, without touching a node.
 
 It links the real solver crate (`sp-npos-elections`, the same one the runtime and the
 staking-miner use), so the scores it computes are directly comparable to what the chain
@@ -195,11 +196,37 @@ staking pie.
 
 - The solver is `sp-npos-elections` 42.0.0 (deps pin `sp-arithmetic` 28.0.1) — the same
   crate family the runtime uses. The pipeline is
-  `seq_phragmen` → `into_staked` → `to_supports` → `evaluate_support`, with
-  `BalancingConfig { iterations: 10, tolerance: 0 }`.
+  `seq_phragmen` → `assignment_ratio_to_staked_normalized` → `to_supports` →
+  `evaluate_support`, with `BalancingConfig { iterations: 10, tolerance: 0 }`. This
+  mirrors the runtime miner (`election-provider-multi-block/src/unsigned/miner.rs`):
+  EPMB flattens all voter pages and runs `seq_phragmen` **once** over every voter (it is
+  *not* a per-page solve), exactly as the lab does. The accuracy type is `Perbill` and
+  the chain feeds raw planck as the `VoteWeight` (Polkadot/Westend use
+  `SaturatingCurrencyToVote`, which does no scaling); the lab saturates that planck →
+  `u64` the same way the chain does.
+
+- **The score the lab computes is the chain's _pre-trim_ score** — an upper bound on the
+  real `minimal_stake`. The runtime, after solving, applies several trimming passes
+  before scoring: a global `MaxBackersPerWinner` truncation (`sorted_truncate_from`), a
+  per-page backer trim, and a length/weight trim. Trimming drops the weakest backers and
+  can therefore only **lower** a winner's backing — so the on-chain `minimal_stake` may
+  come out somewhat below what the lab reports. The lab does **not** model trimming. For
+  finding the `desired_targets` pass/fail crossing this is fine (it shifts the crossing
+  conservatively), but don't read the absolute `minimal_stake` as bit-exact.
+
 - Validated against round 238: the lab reproduces the on-chain `sum_stake` and
-  `sum_stake_squared` **to the digit**; `minimal_stake` lands within ~1% (balancing is
-  iteration-sensitive). Conclusions about pass/fail crossings are robust to that wobble.
+  `sum_stake_squared` closely; `minimal_stake` lands within ~1% (balancing is
+  iteration-sensitive, and the chain's trimming further lowers it). Conclusions about
+  pass/fail crossings are robust to that wobble.
+
+- The gate the lab checks is `score.strict_better(minimumScore)`. On chain a solution
+  must *also* be `strict_better` than any already-**queued** solution
+  (`ensure_score_quality` checks both); the lab only models the `minimumScore` floor,
+  since that's the governance knob you tweak in what-ifs.
+
+- `reduce()` is deliberately omitted: it is support-preserving, so it does not change the
+  score. (The chain calls it for solution size, not score.)
+
 - If you need bit-exact reproduction of a particular submission, match the
   `--iterations`/`--tolerance` to the config the miner used for that solution.
 - The candidate identifier used internally is the candidate's **index** in the snapshot
