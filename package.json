@@ -13,6 +13,8 @@
 		"collect": "./node_modules/.bin/ts-node src/collect-signers.ts",
 		"nominator:exposure": "./node_modules/.bin/ts-node src/nominator-exposure.ts",
 		"validator:self-stake": "./node_modules/.bin/ts-node src/validator-self-stake.ts",
+		"bisect": "./node_modules/.bin/ts-node src/bisect-block.ts",
+		"find:inv-empty": "./node_modules/.bin/ts-node src/find-inv-empty.ts",
 		"build": "npm run clean && ./node_modules/.bin/tsc --pretty --declaration",
 		"build:dev": "./node_modules/.bin/tsc --pretty --declaration --watch",
 		"clean": "./node_modules/.bin/rimraf build",
