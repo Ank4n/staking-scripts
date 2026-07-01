@@ -15,7 +15,6 @@
 		"validator:self-stake": "./node_modules/.bin/ts-node src/validator-self-stake.ts",
 		"validator:commission": "./node_modules/.bin/ts-node src/validator-commission.ts",
 		"election:backing": "./node_modules/.bin/ts-node src/election-backing.ts",
-		"dump:snapshot": "./node_modules/.bin/ts-node src/dump-snapshot.ts",
 		"build": "npm run clean && ./node_modules/.bin/tsc --pretty --declaration",
 		"build:dev": "./node_modules/.bin/tsc --pretty --declaration --watch",
 		"clean": "./node_modules/.bin/rimraf build",
